@@ -27,6 +27,9 @@ document.addEventListener("DOMContentLoaded", () => {
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
         `;
 
+        // Render participants
+        renderParticipants(activityCard, details.participants);
+
         activitiesList.appendChild(activityCard);
 
         // Add option to select dropdown
@@ -83,4 +86,46 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Initialize app
   fetchActivities();
+
+  function getInitials(name) {
+    return (name || '')
+      .split(' ')
+      .filter(Boolean)
+      .map(s => s[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+  }
+
+  function renderParticipants(container, participants = []) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'participants';
+
+    const title = document.createElement('h5');
+    title.textContent = 'Participants';
+    wrapper.appendChild(title);
+
+    const ul = document.createElement('ul');
+    ul.className = 'participants-list';
+
+    const maxVisible = 4;
+    participants.slice(0, maxVisible).forEach(p => {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <div class="participant-avatar">${getInitials(p.name)}</div>
+        <span class="participant-name">${p.name}</span>
+      `;
+      ul.appendChild(li);
+    });
+
+    if (participants.length > maxVisible) {
+      const more = document.createElement('li');
+      more.className = 'participants-count-badge';
+      more.textContent = `+${participants.length - maxVisible}`;
+      ul.appendChild(more);
+    }
+
+    wrapper.appendChild(ul);
+    container.appendChild(wrapper);
+  }
 });
