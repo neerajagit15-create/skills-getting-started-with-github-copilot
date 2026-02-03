@@ -27,6 +27,9 @@ document.addEventListener("DOMContentLoaded", () => {
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
         `;
 
+        // Render participants with delete icon
+        renderParticipants(activityCard, details.participants, name);
+
         activitiesList.appendChild(activityCard);
 
         // Add option to select dropdown
@@ -62,6 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+        fetchActivities(); // Refresh activities after signup
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
@@ -83,4 +87,72 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Initialize app
   fetchActivities();
+
+  function getInitials(name) {
+    return (name || '')
+      .split(' ')
+      .filter(Boolean)
+      .map(s => s[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+  }
+
+  function renderParticipants(container, participants = [], activityName = "") {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'participants';
+
+    const title = document.createElement('h5');
+    title.textContent = 'Participants';
+    wrapper.appendChild(title);
+
+    const ul = document.createElement('ul');
+    ul.className = 'participants-list';
+    ul.style.listStyleType = 'none';
+    ul.style.paddingLeft = '0';
+
+    participants.forEach(email => {
+      const li = document.createElement('li');
+      li.style.display = 'flex';
+      li.style.alignItems = 'center';
+      // Avatar: use initials
+      const initials = (email.split('@')[0].split('.').map(s => s[0].toUpperCase()).join('')) || email[0].toUpperCase();
+      const avatar = document.createElement('div');
+      avatar.className = 'participant-avatar';
+      avatar.textContent = initials;
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'participant-name';
+      nameSpan.textContent = email;
+      // Delete icon
+      const deleteIcon = document.createElement('span');
+      deleteIcon.className = 'delete-icon';
+      deleteIcon.title = 'Remove participant';
+      deleteIcon.innerHTML = '&#128465;'; // Trash can emoji
+      deleteIcon.style.cursor = 'pointer';
+      deleteIcon.style.marginLeft = '8px';
+      deleteIcon.onclick = async () => {
+        if (confirm(`Remove ${email} from ${activityName}?`)) {
+          try {
+            const res = await fetch(`/activities/${encodeURIComponent(activityName)}/participants/${encodeURIComponent(email)}`, {
+              method: 'DELETE'
+            });
+            if (res.ok) {
+              fetchActivities(); // Refresh
+            } else {
+              alert('Failed to remove participant.');
+            }
+          } catch (err) {
+            alert('Error removing participant.');
+          }
+        }
+      };
+      li.appendChild(avatar);
+      li.appendChild(nameSpan);
+      li.appendChild(deleteIcon);
+      ul.appendChild(li);
+    });
+
+    wrapper.appendChild(ul);
+    container.appendChild(wrapper);
+  }
 });
