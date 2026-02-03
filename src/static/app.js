@@ -27,8 +27,8 @@ document.addEventListener("DOMContentLoaded", () => {
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
         `;
 
-        // Render participants
-        renderParticipants(activityCard, details.participants);
+        // Render participants with delete icon
+        renderParticipants(activityCard, details.participants, name);
 
         activitiesList.appendChild(activityCard);
 
@@ -65,6 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+        fetchActivities(); // Refresh activities after signup
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
@@ -97,7 +98,7 @@ document.addEventListener("DOMContentLoaded", () => {
       .toUpperCase();
   }
 
-  function renderParticipants(container, participants = []) {
+  function renderParticipants(container, participants = [], activityName = "") {
     const wrapper = document.createElement('div');
     wrapper.className = 'participants';
 
@@ -107,23 +108,49 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const ul = document.createElement('ul');
     ul.className = 'participants-list';
+    ul.style.listStyleType = 'none';
+    ul.style.paddingLeft = '0';
 
-    const maxVisible = 4;
-    participants.slice(0, maxVisible).forEach(p => {
+    participants.forEach(email => {
       const li = document.createElement('li');
-      li.innerHTML = `
-        <div class="participant-avatar">${getInitials(p.name)}</div>
-        <span class="participant-name">${p.name}</span>
-      `;
+      li.style.display = 'flex';
+      li.style.alignItems = 'center';
+      // Avatar: use initials
+      const initials = (email.split('@')[0].split('.').map(s => s[0].toUpperCase()).join('')) || email[0].toUpperCase();
+      const avatar = document.createElement('div');
+      avatar.className = 'participant-avatar';
+      avatar.textContent = initials;
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'participant-name';
+      nameSpan.textContent = email;
+      // Delete icon
+      const deleteIcon = document.createElement('span');
+      deleteIcon.className = 'delete-icon';
+      deleteIcon.title = 'Remove participant';
+      deleteIcon.innerHTML = '&#128465;'; // Trash can emoji
+      deleteIcon.style.cursor = 'pointer';
+      deleteIcon.style.marginLeft = '8px';
+      deleteIcon.onclick = async () => {
+        if (confirm(`Remove ${email} from ${activityName}?`)) {
+          try {
+            const res = await fetch(`/activities/${encodeURIComponent(activityName)}/participants/${encodeURIComponent(email)}`, {
+              method: 'DELETE'
+            });
+            if (res.ok) {
+              fetchActivities(); // Refresh
+            } else {
+              alert('Failed to remove participant.');
+            }
+          } catch (err) {
+            alert('Error removing participant.');
+          }
+        }
+      };
+      li.appendChild(avatar);
+      li.appendChild(nameSpan);
+      li.appendChild(deleteIcon);
       ul.appendChild(li);
     });
-
-    if (participants.length > maxVisible) {
-      const more = document.createElement('li');
-      more.className = 'participants-count-badge';
-      more.textContent = `+${participants.length - maxVisible}`;
-      ul.appendChild(more);
-    }
 
     wrapper.appendChild(ul);
     container.appendChild(wrapper);
